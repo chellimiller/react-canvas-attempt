@@ -1,73 +1,79 @@
 import * as React from "react";
 
-const move = (canvas, { offsetX, offsetY, movementX, movementY }) => {
-  const context = canvas.getContext("2d");
-  context.strokeStyle = "#222222";
-  context.lineWith = 2;
-
-  const currentPosition = {
-    x: offsetX,
-    y: offsetY
-  };
-
-  const originalPosition = {
-    x: currentPosition.x - movementX,
-    y: currentPosition.y - movementY
-  };
-
-  context.moveTo(originalPosition.x, originalPosition.y);
-  context.lineTo(currentPosition.x, currentPosition.y);
-  context.stroke();
+type Canvas = {
+  reference: React.MutableRefObject<HTMLCanvasElement>;
+  draw: MovementHandler;
 };
 
-const dot = (canvas, { clientX, clientY, radiusX: radius }) => {
-  const context = canvas.getContext("2d");
-  context.strokeStyle = "#222222";
-  context.fillStyle = "green";
-  context.lineWith = 2;
-  const { left, top } = canvas.getBoundingClientRect();
+function drawLine(
+  context: CanvasRenderingContext2D,
+  { original, current }: Movement
+): void {
+  context.strokeStyle = "blue";
+  context.lineWidth = 5;
+  context.moveTo(original.x, original.y);
+  context.lineTo(current.x, current.y);
+  context.stroke();
+}
 
-  const center = {
-    x: clientX - left,
-    y: clientY - top
+const useCanvas: () => Canvas = () => {
+  const reference = React.useRef<HTMLCanvasElement>(null);
+  const draw = (movement: Movement) => {
+    if (reference) {
+      drawLine(reference.current.getContext("2d"), movement);
+    }
   };
 
-  context.arc(center.x, center, radius, 0, 2 * Math.PI, false);
-
-  context.fill();
-  context.stroke();
-
-  console.log(context)
+  return { reference, draw };
 };
 
-export default ({}) => {
-  const canvasReference = React.useRef(null);
+type Position = {
+  x: number;
+  y: number;
+};
 
-  const [lastTouch, setLastTouch] = React.useState(null);
+type Movement = {
+  original: Position;
+  current: Position;
+};
 
-  console.log(lastTouch);
-  React.useEffect(() => {
-    if (canvasReference) {
-      const canvas = canvasReference.current;
-      canvas.addEventListener("mousemove", event => {
-        if (event.buttons) {
-          move(canvas, event);
-        }
-      });
-      canvas.addEventListener("touchmove", ({changedTouches}) => {
-        if (changedTouches[0]) {
-          dot(canvas, changedTouches[0]);
+type MovementHandler = (movement: Movement) => void;
+
+function useOnMouseDraw<T extends HTMLElement>(handler: MovementHandler): React.MouseEventHandler {
+  return ({
+    clientX,
+    clientY,
+    movementX,
+    movementY,
+    buttons
+  }: React.MouseEvent) => {
+    if (buttons) {
+      handler({
+        original: {
+          x: clientX - movementX,
+          y: clientY - movementY
+        },
+        current: {
+          x: clientX,
+          y: clientY
         }
       });
     }
-  }, [canvasReference]);
+  };
+}
+
+export default ({}) => {
+  const { reference, draw } = useCanvas();
+
+  const onMouseMove = useOnMouseDraw(draw);
 
   return (
     <canvas
-      ref={canvasReference}
+      ref={reference}
       height="500px"
       width="400px"
       style={{ border: "1px solid black" }}
+      onMouseMove={onMouseMove}
     >
       Get a better browser, bro.
     </canvas>
