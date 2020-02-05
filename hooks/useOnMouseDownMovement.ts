@@ -1,7 +1,7 @@
 
 import { MovementHandler } from "../types";
 
-export default function useOnMouseDownMovement<T extends HTMLElement>(handler: MovementHandler): React.MouseEventHandler {
+export default function useOnMouseDownMovement(handler: MovementHandler): React.MouseEventHandler {
   return ({
     clientX,
     clientY,
